@@ -13,8 +13,56 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    cursor: none; /* Oculta el cursor por defecto para un efecto más inmersivo */
+    cursor: default; /* El cursor es visible en la pantalla inicial */
   }
+
+  #startButtonContainer {
+    text-align: center;
+    z-index: 2000; /* Asegura que esté por encima de todo */
+    background-color: #000; /* Fondo negro para el contenedor del botón */
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
+  #startButton {
+    padding: 30px 60px;
+    font-size: 3em;
+    background-color: #ff00ff; /* Magenta neón */
+    color: #000;
+    border: 5px solid #00ffff; /* Cian neón */
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 0 40px rgba(255, 0, 255, 0.9), 0 0 40px rgba(0, 255, 255, 0.9);
+    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.1s;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 3px;
+    animation: pulse 1.5s infinite alternate; /* Efecto de pulsación */
+  }
+
+  #startButton:hover {
+    background-color: #ff33ff;
+    box-shadow: 0 0 50px rgba(255, 0, 255, 1), 0 0 50px rgba(0, 255, 255, 1);
+    transform: scale(1.03);
+  }
+
+  #startButton:active {
+    transform: scale(0.97);
+    background-color: #cc00cc;
+    animation: none; /* Quita la animación al presionar */
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1); box-shadow: 0 0 40px rgba(255, 0, 255, 0.9), 0 0 40px rgba(0, 255, 255, 0.9); }
+    to { transform: scale(1.05); box-shadow: 0 0 50px rgba(255, 0, 255, 1), 0 0 50px rgba(0, 255, 255, 1), 0 0 60px rgba(255, 0, 255, 0.7); }
+  }
+
 
   #fullscreenOverlay {
     position: fixed;
@@ -32,8 +80,16 @@
     align-items: flex-start;
     padding: 20px;
     box-sizing: border-box;
-    /* No hay 'visibility: hidden' ni 'opacity: 0' inicial. Se activa al cargar. */
+    visibility: hidden; /* Inicialmente oculto */
+    opacity: 0;
+    transition: opacity 0.5s ease;
     z-index: 1000;
+    cursor: none; /* Cursor oculto una vez en la simulación */
+  }
+
+  #fullscreenOverlay.active {
+    visibility: visible;
+    opacity: 1;
   }
 
   /* Mensaje de BLOQUEO al intentar salir */
@@ -252,6 +308,10 @@
 </head>
 <body>
 
+<div id="startButtonContainer">
+  <button id="startButton" onclick="activateHackermanMode()">¡INICIAR SIMULACIÓN CRÍTICA!</button>
+</div>
+
 <div id="fullscreenOverlay">
   <div id="dataRain"></div>
   <div id="consoleArea">
@@ -288,6 +348,7 @@
 </div>
 
 <script>
+const startButtonContainer = document.getElementById('startButtonContainer');
 const fullscreenOverlay = document.getElementById('fullscreenOverlay');
 const consoleArea = document.getElementById('consoleArea');
 const lockedMessage = document.getElementById('lockedMessage');
@@ -298,8 +359,8 @@ const dataRain = document.getElementById('dataRain');
 const selfDestructCountdown = document.getElementById('selfDestructCountdown');
 const countdownNumber = document.getElementById('countdownNumber');
 
-const antivirusAppearTime = 2000; // La ventana de antivirus aparece después de 2 segundos
-const selfDestructTriggerTime = 20000; // La autodestrucción empieza después de 20 segundos de iniciar
+const antivirusAppearTime = 2000; // La ventana de antivirus aparece después de 2 segundos de iniciar la simulación
+const selfDestructTriggerTime = 20000; // La autodestrucción empieza después de 20 segundos de iniciar la simulación
 
 const messageIntervalSpeed = 40; // Mensajes de consola cada 40ms (más rápido)
 
@@ -460,7 +521,7 @@ function startSelfDestructCountdown() {
         if (count <= 0) {
             clearInterval(selfDestructTimer);
             selfDestructCountdown.classList.remove('active');
-            // ÚNICA salida del modo pantalla completa
+            // ÚNICA salida del modo pantalla completa forzada por el script
             if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
@@ -473,7 +534,6 @@ function startSelfDestructCountdown() {
                 }
             }
             // Después de la cuenta regresiva, reseteamos el modo (limpiar intervalos, etc.)
-            // Esto es crucial para que si la página se recarga, empiece de nuevo limpia
             resetHackermanMode();
         }
     }, 1000);
@@ -481,22 +541,23 @@ function startSelfDestructCountdown() {
 
 // Función principal para activar el modo
 function activateHackermanMode() {
-  fullscreenOverlay.classList.add('active'); // Asegura que el overlay es visible
+  startButtonContainer.style.display = 'none'; // Oculta el botón
+  fullscreenOverlay.classList.add('active'); // Muestra el overlay
 
-  // Request fullscreen automáticamente
+  // Solicitar pantalla completa (esto solo funcionará porque es una interacción del usuario)
   const requestFullscreen = () => {
-    if (fullscreenOverlay.requestFullscreen) {
-      fullscreenOverlay.requestFullscreen();
-    } else if (fullscreenOverlay.mozRequestFullScreen) {
-      fullscreenOverlay.mozRequestFullScreen();
-    } else if (fullscreenOverlay.webkitRequestFullscreen) {
-      fullscreenOverlay.webkitRequestFullscreen();
-    } else if (fullscreenOverlay.msRequestFullscreen) {
-      fullscreenOverlay.msRequestFullscreen();
+    if (document.documentElement.requestFullscreen) { // requestFullscreen en el elemento <html>
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.mozRequestFullScreen) {
+      document.documentElement.mozRequestFullScreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) {
+      document.documentElement.msRequestFullscreen();
     }
   };
 
-  requestFullscreen(); // Intenta entrar en fullscreen al inicio
+  requestFullscreen(); // Intenta entrar en fullscreen
 
   startConsoleMessages();
   startDataRain();
@@ -516,28 +577,27 @@ function resetHackermanMode() {
     stopConsoleMessages();
     stopAntivirusWindow();
     stopDataRain();
-    clearInterval(selfDestructTimer); // Asegura que no haya un timer corriendo
+    clearInterval(selfDestructTimer);
 
     // Reiniciar el estado visual de la consola para la próxima vez que se active (si la página se recarga)
     consoleArea.innerHTML = '<div class="console-line"><span class="success">SYSTEM_INIT: Boot sequence complete.</span></div><div class="console-line"><span class="antivirus-text">[ANTIVIRUS]: Scanning system...</span></div>';
     countdownNumber.textContent = '5'; // Resetear el número para la próxima vez
     selfDestructCountdown.classList.remove('active'); // Ocultar la cuenta regresiva
 
-    // No ocultamos el fullscreenOverlay aquí, ya que el único escape es la autodestrucción
-    // y si la persona saliera con ESC/F11, intentaremos meterla de nuevo.
+    fullscreenOverlay.classList.remove('active'); // Ocultar el overlay
+    startButtonContainer.style.display = 'flex'; // Mostrar el botón de nuevo (para que se pueda reiniciar)
 }
 
 
 // --- Manejo de la salida de pantalla completa por parte del usuario ---
 document.addEventListener('keydown', (event) => {
-    // Si la tecla es ESC o F11
-    if (event.key === 'Escape' || event.key === 'F11') {
+    // Si la tecla es ESC o F11 y el overlay está activo (simulación en curso)
+    if (fullscreenOverlay.classList.contains('active') && (event.key === 'Escape' || event.key === 'F11')) {
         event.preventDefault(); // Intenta prevenir la acción por defecto
         showLockedMessage(); // Muestra el mensaje de bloqueo
 
-        // Importante: No llamamos a exitFullscreen aquí, lo dejamos al navegador
-        // y el listener handleFullscreenExit se encargará de volver a entrar
-        // si el usuario logra salir.
+        // Importante: Aquí no llamamos a exitFullscreen. Dejamos que el navegador decida.
+        // El listener handleFullscreenExit se encargará de volver a entrar si el usuario logra salir.
     }
 });
 
@@ -556,34 +616,28 @@ document.addEventListener('MSFullscreenChange', handleFullscreenExit);
 
 function handleFullscreenExit() {
     // Si ya NO estamos en pantalla completa Y el overlay está activo (significa que la simulación sigue)
-    // Entonces, intentamos volver a entrar en pantalla completa inmediatamente después de un breve retraso.
-    // El retraso evita un bucle demasiado rápido y le da tiempo al navegador a procesar la salida.
+    // Y la cuenta regresiva de autodestrucción NO está activa (para evitar re-entrar justo al final)
     if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-        // Solo si la simulación está activa (no ha terminado con la autodestrucción)
-        // Y el overlay aún está visible (ya que al final de la autodestrucción lo limpiamos todo)
         if (fullscreenOverlay.classList.contains('active') && !selfDestructCountdown.classList.contains('active')) {
+            // Re-entrar a pantalla completa después de un breve retraso
             setTimeout(() => {
-                if (fullscreenOverlay.requestFullscreen) {
-                    fullscreenOverlay.requestFullscreen();
-                } else if (fullscreenOverlay.mozRequestFullScreen) {
-                    fullscreenOverlay.mozRequestFullScreen();
-                } else if (fullscreenOverlay.webkitRequestFullscreen) {
-                    fullscreenOverlay.webkitRequestFullscreen();
-                } else if (fullscreenOverlay.msRequestFullscreen) {
-                    fullscreenOverlay.msRequestFullscreen();
+                // Volver a solicitar pantalla completa. Usamos document.documentElement para cubrir toda la página.
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
                 }
             }, 100); // Intenta re-entrar después de 100ms
-            // Opcional: Podrías mostrar el lockedMessage aquí también si quieres que aparezca cada vez que lo intenten
-            // showLockedMessage();
         }
     }
-    // Si la simulación terminó (por la autodestrucción), `resetHackermanMode` ya se encargó de limpiar
-    // y no intentaremos re-entrar.
 }
 
-// Activar el modo Hackerman automáticamente cuando la página carga
-document.addEventListener('DOMContentLoaded', activateHackermanMode);
-
+// Al cargar la página, se muestra el botón de inicio
+// El evento `DOMContentLoaded` ya no activa la simulación directamente, solo la prepara.
 </script>
 
 </body>

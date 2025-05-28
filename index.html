@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Modo Hackerman: SYSTEM CRITICAL!</title>
+<title>SYSTEM DETONATION INITIATED!</title>
 <style>
   body {
     margin: 0;
@@ -14,37 +14,6 @@
     align-items: center;
     min-height: 100vh;
     cursor: none; /* Oculta el cursor por defecto para un efecto más inmersivo */
-  }
-
-  #startButtonContainer {
-    text-align: center;
-    z-index: 100;
-  }
-
-  #startButton {
-    padding: 25px 50px;
-    font-size: 2.5em;
-    background-color: #ff00ff; /* Magenta neón */
-    color: #000;
-    border: 3px solid #00ffff; /* Cian neón */
-    border-radius: 15px;
-    cursor: pointer;
-    box-shadow: 0 0 30px rgba(255, 0, 255, 0.9), 0 0 30px rgba(0, 255, 255, 0.9);
-    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.1s;
-    text-transform: uppercase;
-    font-weight: bold;
-    letter-spacing: 2px;
-  }
-
-  #startButton:hover {
-    background-color: #ff33ff;
-    box-shadow: 0 0 40px rgba(255, 0, 255, 1), 0 0 40px rgba(0, 255, 255, 1);
-    transform: scale(1.02);
-  }
-
-  #startButton:active {
-    transform: scale(0.98);
-    background-color: #cc00cc;
   }
 
   #fullscreenOverlay {
@@ -63,15 +32,8 @@
     align-items: flex-start;
     padding: 20px;
     box-sizing: border-box;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.5s ease;
+    /* No hay 'visibility: hidden' ni 'opacity: 0' inicial. Se activa al cargar. */
     z-index: 1000;
-  }
-
-  #fullscreenOverlay.active {
-    visibility: visible;
-    opacity: 1;
   }
 
   /* Mensaje de BLOQUEO al intentar salir */
@@ -91,6 +53,7 @@
     padding: 20px 40px;
     border-radius: 15px;
     border: 3px solid #ff0000;
+    text-align: center;
   }
   #lockedMessage.show {
     opacity: 1;
@@ -130,7 +93,7 @@
   .warning { color: #ffcc00; font-weight: bold; }
   .error { color: #ff0000; font-weight: bold; text-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
   .success { color: #00ff00; font-weight: bold; }
-  .antivirus-text { color: #00ffff; font-weight: bold; } /* Cambio de nombre para no chocar */
+  .antivirus-text { color: #00ffff; font-weight: bold; }
   .data-stream { font-size: 0.9em; color: #009900; white-space: pre; }
 
   .prompt {
@@ -138,7 +101,7 @@
     bottom: 20px;
     left: 20px;
     color: #00ff00;
-    z-index: 1001; /* Asegura que esté por encima de la lluvia de datos */
+    z-index: 1001;
   }
 
   .console-cursor {
@@ -162,14 +125,14 @@
     top: 20%;
     left: 50%;
     transform: translateX(-50%);
-    width: 500px; /* Tamaño de la ventana */
-    background-color: #1a1a1a; /* Fondo oscuro */
-    border: 2px solid #00ffff; /* Borde cian */
+    width: 500px;
+    background-color: #1a1a1a;
+    border: 2px solid #00ffff;
     box-shadow: 0 0 25px rgba(0, 255, 255, 0.5), 0 0 15px rgba(255, 0, 255, 0.5);
     padding: 15px;
     box-sizing: border-box;
-    z-index: 1003; /* Por encima de todo lo demás */
-    display: none; /* Inicialmente oculto */
+    z-index: 1003;
+    display: none;
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -233,19 +196,19 @@
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Permite clicks a través de esta capa */
+    pointer-events: none;
     overflow: hidden;
-    z-index: 999; /* Por debajo de la consola y la ventana AV */
+    z-index: 999;
   }
   .data-character {
     position: absolute;
-    color: rgba(0, 255, 0, 0.3); /* Transparente para efecto */
+    color: rgba(0, 255, 0, 0.3);
     font-size: 1em;
-    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5); /* Efecto brillo */
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
     opacity: 0;
-    animation: rainFall 5s linear forwards infinite; /* Animación de caída */
-    animation-delay: var(--delay); /* Retraso personalizado */
-    animation-duration: var(--duration); /* Duración personalizada */
+    animation: rainFall 5s linear forwards infinite;
+    animation-delay: var(--delay);
+    animation-duration: var(--duration);
   }
 
   @keyframes rainFall {
@@ -255,17 +218,43 @@
     100% { transform: translateY(100vh) translateX(var(--end-x)); opacity: 0; }
   }
 
-
+  /* --- Countdown de Autodestrucción --- */
+  #selfDestructCountdown {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 15em; /* Muy grande */
+    color: #ff0000;
+    text-shadow: 0 0 50px rgba(255, 0, 0, 0.9);
+    z-index: 1004; /* Más alto que todo */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease;
+  }
+  #selfDestructCountdown.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  #selfDestructCountdown .message {
+      font-size: 0.2em; /* Mensaje más pequeño */
+      color: #ffcc00; /* Amarillo */
+      text-shadow: none;
+      margin-top: 20px;
+  }
 </style>
 </head>
 <body>
 
-<div id="startButtonContainer">
-  <button id="startButton" onclick="activateHackermanMode()">¡Activar MODO CRÍTICO!</button>
-</div>
-
 <div id="fullscreenOverlay">
-  <div id="dataRain"></div> <div id="consoleArea">
+  <div id="dataRain"></div>
+  <div id="consoleArea">
     <div class="console-line"><span class="success">SYSTEM_INIT: Boot sequence complete.</span></div>
     <div class="console-line"><span class="antivirus-text">[ANTIVIRUS]: Scanning system...</span></div>
   </div>
@@ -291,10 +280,14 @@
     </div>
   </div>
 
+  <div id="selfDestructCountdown">
+      <span id="countdownNumber">5</span>
+      <span class="message">PC SELF-DESTRUCT INITIATED</span>
+  </div>
+
 </div>
 
 <script>
-const startButtonContainer = document.getElementById('startButtonContainer');
 const fullscreenOverlay = document.getElementById('fullscreenOverlay');
 const consoleArea = document.getElementById('consoleArea');
 const lockedMessage = document.getElementById('lockedMessage');
@@ -302,16 +295,18 @@ const antivirusWindow = document.getElementById('antivirusWindow');
 const antivirusStatus = document.getElementById('antivirusStatus');
 const antivirusProgress = document.getElementById('antivirusProgress');
 const dataRain = document.getElementById('dataRain');
+const selfDestructCountdown = document.getElementById('selfDestructCountdown');
+const countdownNumber = document.getElementById('countdownNumber');
 
-const finalExitTimeSeconds = 45; // Tiempo máximo que dura la simulación antes de la salida forzada
-const antivirusAppearTime = 5000; // La ventana de antivirus aparece después de 5 segundos
-const antivirusHackTime = 10000; // El antivirus empieza a ser "hackeado" después de 10 segundos
-const messageIntervalSpeed = 50; // Mensajes de consola cada 50ms
+const antivirusAppearTime = 2000; // La ventana de antivirus aparece después de 2 segundos
+const selfDestructTriggerTime = 20000; // La autodestrucción empieza después de 20 segundos de iniciar
 
-let globalTimer; // Para el temporizador de salida forzada
-let messageInterval; // Para los mensajes de la consola principal
-let antivirusInterval; // Para los mensajes del antivirus
-let dataRainInterval; // Para la lluvia de datos
+const messageIntervalSpeed = 40; // Mensajes de consola cada 40ms (más rápido)
+
+let messageInterval;
+let antivirusInterval;
+let dataRainInterval;
+let selfDestructTimer;
 
 // Mensajes para la consola principal (más variados y caóticos)
 const hackermanMessages = [
@@ -377,7 +372,7 @@ function startConsoleMessages() {
   messageInterval = setInterval(() => {
     addConsoleLine(hackermanMessages[messageIndex]);
     messageIndex = (messageIndex + 1) % hackermanMessages.length;
-  }, messageIntervalSpeed); // Velocidad configurable
+  }, messageIntervalSpeed);
 }
 
 function stopConsoleMessages() {
@@ -387,35 +382,34 @@ function stopConsoleMessages() {
 // Lógica de la ventana de antivirus
 function activateAntivirusWindow() {
   antivirusWindow.classList.add('active');
-  antivirusStatus.innerHTML = antivirusHackMessages[0]; // Mensaje inicial
-  antivirusProgress.style.width = '20%'; // Progreso inicial
-  let hackPhase = 0;
+  antivirusStatus.innerHTML = antivirusHackMessages[0];
+  antivirusProgress.style.width = '20%';
+  
+  let hackProgressCount = 0;
   antivirusInterval = setInterval(() => {
-    hackPhase++;
-    const statusIdx = hackPhase % antivirusHackMessages.length;
+    hackProgressCount++;
+    const statusIdx = hackProgressCount % antivirusHackMessages.length;
     antivirusStatus.innerHTML = antivirusHackMessages[statusIdx];
     
-    // Simula el progreso fallido o revertido
     let currentProgress = parseInt(antivirusProgress.style.width);
-    if (currentProgress < 80) {
-      antivirusProgress.style.width = `${currentProgress + 5}%`;
-      antivirusProgress.style.backgroundColor = '#00ff00'; // Sigue verde
-    } else {
-      // Una vez que llega al 80%, empieza a fallar
-      antivirusProgress.style.width = `${currentProgress - 10}%`; // Simula retroceso
-      antivirusProgress.style.backgroundColor = '#ff0000'; // Se vuelve rojo
-      antivirusStatus.style.textShadow = '0 0 10px rgba(255,0,0,0.9)'; // Efecto de sombra roja
+    if (hackProgressCount < 10) { // Primeros ~7 segundos, avanza
+      antivirusProgress.style.width = `${Math.min(80, currentProgress + 5)}%`;
+      antivirusProgress.style.backgroundColor = '#00ff00';
+    } else { // Después, el virus empieza a ganar
+      antivirusProgress.style.width = `${Math.max(0, currentProgress - 8)}%`; // Retrocede más rápido
+      antivirusProgress.style.backgroundColor = '#ff0000';
+      antivirusStatus.style.textShadow = '0 0 10px rgba(255,0,0,0.9)';
     }
     
-  }, 1000); // Actualiza la ventana antivirus cada segundo
+  }, 700);
 }
 
 function stopAntivirusWindow() {
   clearInterval(antivirusInterval);
   antivirusWindow.classList.remove('active');
   antivirusProgress.style.width = '0%';
-  antivirusProgress.style.backgroundColor = '#00ff00'; // Reset color
-  antivirusStatus.style.textShadow = 'none'; // Reset shadow
+  antivirusProgress.style.backgroundColor = '#00ff00';
+  antivirusStatus.style.textShadow = 'none';
 }
 
 // Lógica para la lluvia de datos
@@ -426,121 +420,169 @@ function createDataCharacter() {
     span.classList.add('data-character');
     span.textContent = char;
 
-    const startX = Math.random() * 100; // Posición horizontal de inicio
-    const endX = Math.random() * 100; // Posición horizontal de fin (para un poco de movimiento lateral)
-    const delay = Math.random() * 5; // Retraso de animación
-    const duration = 5 + Math.random() * 10; // Duración de la caída
+    const startX = Math.random() * 100;
+    const endX = Math.random() * 100;
+    const delay = Math.random() * 5;
+    const duration = 5 + Math.random() * 10;
 
     span.style.setProperty('--start-x', `${startX}vw`);
     span.style.setProperty('--end-x', `${endX}vw`);
     span.style.setProperty('--delay', `${delay}s`);
     span.style.setProperty('--duration', `${duration}s`);
-    span.style.left = `${Math.random() * 100}vw`; // Posición inicial aleatoria
-    span.style.fontSize = `${0.8 + Math.random() * 1.2}em`; // Tamaño aleatorio
+    span.style.left = `${Math.random() * 100}vw`;
+    span.style.fontSize = `${0.8 + Math.random() * 1.2}em`;
 
     dataRain.appendChild(span);
 
-    // Eliminar el carácter después de su animación
     span.addEventListener('animationend', () => {
         span.remove();
     });
 }
 
 function startDataRain() {
-    dataRainInterval = setInterval(createDataCharacter, 50); // Genera un carácter cada 50ms
+    dataRainInterval = setInterval(createDataCharacter, 50);
 }
 
 function stopDataRain() {
     clearInterval(dataRainInterval);
-    dataRain.innerHTML = ''; // Limpia todos los caracteres
+    dataRain.innerHTML = '';
 }
 
+// Lógica de Autodestrucción
+function startSelfDestructCountdown() {
+    selfDestructCountdown.classList.add('active');
+    let count = 5;
+    countdownNumber.textContent = count;
+
+    selfDestructTimer = setInterval(() => {
+        count--;
+        countdownNumber.textContent = count;
+        if (count <= 0) {
+            clearInterval(selfDestructTimer);
+            selfDestructCountdown.classList.remove('active');
+            // ÚNICA salida del modo pantalla completa
+            if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+            // Después de la cuenta regresiva, reseteamos el modo (limpiar intervalos, etc.)
+            // Esto es crucial para que si la página se recarga, empiece de nuevo limpia
+            resetHackermanMode();
+        }
+    }, 1000);
+}
 
 // Función principal para activar el modo
 function activateHackermanMode() {
-  startButtonContainer.style.display = 'none';
-  fullscreenOverlay.classList.add('active');
+  fullscreenOverlay.classList.add('active'); // Asegura que el overlay es visible
 
-  // Request fullscreen
-  if (fullscreenOverlay.requestFullscreen) {
-    fullscreenOverlay.requestFullscreen();
-  } else if (fullscreenOverlay.mozRequestFullScreen) {
-    fullscreenOverlay.mozRequestFullScreen();
-  } else if (fullscreenOverlay.webkitRequestFullscreen) {
-    fullscreenOverlay.webkitRequestFullscreen();
-  } else if (fullscreenOverlay.msRequestFullscreen) {
-    fullscreenOverlay.msRequestFullscreen();
-  }
+  // Request fullscreen automáticamente
+  const requestFullscreen = () => {
+    if (fullscreenOverlay.requestFullscreen) {
+      fullscreenOverlay.requestFullscreen();
+    } else if (fullscreenOverlay.mozRequestFullScreen) {
+      fullscreenOverlay.mozRequestFullScreen();
+    } else if (fullscreenOverlay.webkitRequestFullscreen) {
+      fullscreenOverlay.webkitRequestFullscreen();
+    } else if (fullscreenOverlay.msRequestFullscreen) {
+      fullscreenOverlay.msRequestFullscreen();
+    }
+  };
 
-  startConsoleMessages(); // Inicia los mensajes de la consola
-  startDataRain(); // Inicia la lluvia de datos
+  requestFullscreen(); // Intenta entrar en fullscreen al inicio
 
-  // Temporizador para la aparición de la ventana de antivirus
+  startConsoleMessages();
+  startDataRain();
+
+  // Aparición de la ventana de antivirus
   setTimeout(activateAntivirusWindow, antivirusAppearTime);
 
-  // Temporizador para la salida forzada (el "escape" oculto)
-  globalTimer = setTimeout(() => {
-    // Si todavía estamos en pantalla completa, salimos
-    if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-    }
-    // Independientemente de si salimos de pantalla completa o no, limpiamos y reiniciamos
-    resetHackermanMode();
-  }, finalExitTimeSeconds * 1000); // Convertir segundos a milisegundos
+  // Inicio de la cuenta regresiva de autodestrucción
+  setTimeout(() => {
+      startSelfDestructCountdown();
+  }, selfDestructTriggerTime);
 }
 
-// Función para reiniciar el modo (se llama al salir de pantalla completa o al finalizar el tiempo)
+// Función para reiniciar el modo (limpia todos los intervalos y estados)
+// Se llama al final de la autodestrucción para limpiar todo.
 function resetHackermanMode() {
-    clearTimeout(globalTimer); // Limpiar el temporizador de salida
     stopConsoleMessages();
     stopAntivirusWindow();
     stopDataRain();
-    fullscreenOverlay.classList.remove('active');
-    startButtonContainer.style.display = 'block';
-    // Opcional: limpiar la consola principal
+    clearInterval(selfDestructTimer); // Asegura que no haya un timer corriendo
+
+    // Reiniciar el estado visual de la consola para la próxima vez que se active (si la página se recarga)
     consoleArea.innerHTML = '<div class="console-line"><span class="success">SYSTEM_INIT: Boot sequence complete.</span></div><div class="console-line"><span class="antivirus-text">[ANTIVIRUS]: Scanning system...</span></div>';
+    countdownNumber.textContent = '5'; // Resetear el número para la próxima vez
+    selfDestructCountdown.classList.remove('active'); // Ocultar la cuenta regresiva
+
+    // No ocultamos el fullscreenOverlay aquí, ya que el único escape es la autodestrucción
+    // y si la persona saliera con ESC/F11, intentaremos meterla de nuevo.
 }
 
 
 // --- Manejo de la salida de pantalla completa por parte del usuario ---
 document.addEventListener('keydown', (event) => {
-    // Si estamos en el overlay y se presiona ESC o F11
-    if (fullscreenOverlay.classList.contains('active') && (event.key === 'Escape' || event.key === 'F11')) {
-        event.preventDefault(); // Intenta prevenir la acción por defecto (navegadores pueden ignorarlo para ESC)
+    // Si la tecla es ESC o F11
+    if (event.key === 'Escape' || event.key === 'F11') {
+        event.preventDefault(); // Intenta prevenir la acción por defecto
         showLockedMessage(); // Muestra el mensaje de bloqueo
+
+        // Importante: No llamamos a exitFullscreen aquí, lo dejamos al navegador
+        // y el listener handleFullscreenExit se encargará de volver a entrar
+        // si el usuario logra salir.
     }
 });
 
 function showLockedMessage() {
     lockedMessage.classList.add('show');
-    // Ocultar el mensaje de bloqueo después de un tiempo
     setTimeout(() => {
         lockedMessage.classList.remove('show');
-    }, 2000); // Muestra el mensaje por 2 segundos
+    }, 2000);
 }
 
-
-// Eventos para detectar la salida de pantalla completa por el navegador (ej. si el usuario presiona ESC)
+// Eventos para detectar la salida de pantalla completa por el navegador
 document.addEventListener('fullscreenchange', handleFullscreenExit);
 document.addEventListener('webkitfullscreenchange', handleFullscreenExit);
 document.addEventListener('mozfullscreenchange', handleFullscreenExit);
 document.addEventListener('MSFullscreenChange', handleFullscreenExit);
 
 function handleFullscreenExit() {
-    // Si ya NO estamos en pantalla completa Y el overlay está activo
-    // Esto significa que el usuario salió manualmente (ej. ESC) y necesitamos limpiar
-    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement && fullscreenOverlay.classList.contains('active')) {
-        resetHackermanMode();
+    // Si ya NO estamos en pantalla completa Y el overlay está activo (significa que la simulación sigue)
+    // Entonces, intentamos volver a entrar en pantalla completa inmediatamente después de un breve retraso.
+    // El retraso evita un bucle demasiado rápido y le da tiempo al navegador a procesar la salida.
+    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        // Solo si la simulación está activa (no ha terminado con la autodestrucción)
+        // Y el overlay aún está visible (ya que al final de la autodestrucción lo limpiamos todo)
+        if (fullscreenOverlay.classList.contains('active') && !selfDestructCountdown.classList.contains('active')) {
+            setTimeout(() => {
+                if (fullscreenOverlay.requestFullscreen) {
+                    fullscreenOverlay.requestFullscreen();
+                } else if (fullscreenOverlay.mozRequestFullScreen) {
+                    fullscreenOverlay.mozRequestFullScreen();
+                } else if (fullscreenOverlay.webkitRequestFullscreen) {
+                    fullscreenOverlay.webkitRequestFullscreen();
+                } else if (fullscreenOverlay.msRequestFullscreen) {
+                    fullscreenOverlay.msRequestFullscreen();
+                }
+            }, 100); // Intenta re-entrar después de 100ms
+            // Opcional: Podrías mostrar el lockedMessage aquí también si quieres que aparezca cada vez que lo intenten
+            // showLockedMessage();
+        }
     }
+    // Si la simulación terminó (por la autodestrucción), `resetHackermanMode` ya se encargó de limpiar
+    // y no intentaremos re-entrar.
 }
+
+// Activar el modo Hackerman automáticamente cuando la página carga
+document.addEventListener('DOMContentLoaded', activateHackermanMode);
 
 </script>
 

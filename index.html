@@ -104,7 +104,7 @@
     z-index: 1002;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.1s ease, visibility 0.1s ease; /* Más rápido */
     background-color: rgba(0, 0, 0, 0.7);
     padding: 20px 40px;
     border-radius: 15px;
@@ -546,14 +546,17 @@ function activateHackermanMode() {
 
   // Solicitar pantalla completa (esto solo funcionará porque es una interacción del usuario)
   const requestFullscreen = () => {
-    if (document.documentElement.requestFullscreen) { // requestFullscreen en el elemento <html>
-      document.documentElement.requestFullscreen();
-    } else if (document.documentElement.mozRequestFullScreen) {
-      document.documentElement.mozRequestFullScreen();
-    } else if (document.documentElement.webkitRequestFullscreen) {
-      document.documentElement.webkitRequestFullscreen();
-    } else if (document.documentElement.msRequestFullscreen) {
-      document.documentElement.msRequestFullscreen();
+    // Si ya estamos en pantalla completa, no necesitamos solicitarla de nuevo
+    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+        if (document.documentElement.requestFullscreen) { // requestFullscreen en el elemento <html>
+            document.documentElement.requestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+            document.documentElement.mozRequestFullScreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        } else if (document.documentElement.msRequestFullscreen) {
+            document.documentElement.msRequestFullscreen();
+        }
     }
   };
 
@@ -593,20 +596,24 @@ function resetHackermanMode() {
 document.addEventListener('keydown', (event) => {
     // Si la tecla es ESC o F11 y el overlay está activo (simulación en curso)
     if (fullscreenOverlay.classList.contains('active') && (event.key === 'Escape' || event.key === 'F11')) {
-        event.preventDefault(); // Intenta prevenir la acción por defecto
+        event.preventDefault(); // Intenta prevenir la acción por defecto (navegadores suelen ignorarlo para ESC)
         showLockedMessage(); // Muestra el mensaje de bloqueo
 
-        // Importante: Aquí no llamamos a exitFullscreen. Dejamos que el navegador decida.
-        // El listener handleFullscreenExit se encargará de volver a entrar si el usuario logra salir.
+        // Importante: No llamamos a exitFullscreen aquí. Dejamos que el navegador decida.
+        // El listener handleFullscreenExit se encargará de intentar volver a entrar.
     }
 });
 
 function showLockedMessage() {
     lockedMessage.classList.add('show');
+    // Mantiene el mensaje visible por 2 segundos
     setTimeout(() => {
         lockedMessage.classList.remove('show');
     }, 2000);
 }
+
+// Variable para controlar si ya estamos intentando re-entrar para evitar bucles de solicitudes
+let reEnterFullscreenTimeoutId = null;
 
 // Eventos para detectar la salida de pantalla completa por el navegador
 document.addEventListener('fullscreenchange', handleFullscreenExit);
@@ -619,25 +626,43 @@ function handleFullscreenExit() {
     // Y la cuenta regresiva de autodestrucción NO está activa (para evitar re-entrar justo al final)
     if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
         if (fullscreenOverlay.classList.contains('active') && !selfDestructCountdown.classList.contains('active')) {
-            // Re-entrar a pantalla completa después de un breve retraso
-            setTimeout(() => {
-                // Volver a solicitar pantalla completa. Usamos document.documentElement para cubrir toda la página.
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen();
-                } else if (document.documentElement.mozRequestFullScreen) {
-                    document.documentElement.mozRequestFullScreen();
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
-                } else if (document.documentElement.msRequestFullscreen) {
-                    document.documentElement.msRequestFullscreen();
-                }
-            }, 100); // Intenta re-entrar después de 100ms
+            // Solo intentamos re-entrar si no hay ya un intento pendiente
+            if (reEnterFullscreenTimeoutId === null) {
+                // Configura un intento de re-entrada muy rápido
+                reEnterFullscreenTimeoutId = setTimeout(() => {
+                    // console.log("Intentando re-entrar a pantalla completa..."); // Para depuración
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen()
+                            .catch(err => {
+                                // console.log("Error al intentar re-entrar a pantalla completa:", err.name, err.message);
+                                // Este catch es crucial: si el navegador lo bloquea, libera el timeoutId
+                                reEnterFullscreenTimeoutId = null; 
+                            });
+                    } else if (document.documentElement.mozRequestFullScreen) {
+                        document.documentElement.mozRequestFullScreen();
+                    } else if (document.documentElement.webkitRequestFullscreen) {
+                        document.documentElement.webkitRequestFullscreen();
+                    } else if (document.documentElement.msRequestFullscreen) {
+                        document.documentElement.msRequestFullscreen();
+                    }
+                    // Liberar el timeoutId después de la solicitud para permitir futuros intentos
+                    // si la solicitud actual falla o es bloqueada.
+                    if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+                        // Si se logró entrar, reseteamos el ID
+                        reEnterFullscreenTimeoutId = null;
+                    }
+                }, 50); // Intenta re-entrar después de 50ms (muy rápido)
+            }
+        }
+    } else {
+        // Si detectamos que SÍ estamos en pantalla completa, limpia cualquier timeout pendiente
+        if (reEnterFullscreenTimeoutId !== null) {
+            clearTimeout(reEnterFullscreenTimeoutId);
+            reEnterFullscreenTimeoutId = null;
         }
     }
 }
 
-// Al cargar la página, se muestra el botón de inicio
-// El evento `DOMContentLoaded` ya no activa la simulación directamente, solo la prepara.
 </script>
 
 </body>

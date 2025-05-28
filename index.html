@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Modo Hackerman: Alerta de Sistema</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden; /* Oculta barras de desplazamiento */
+    font-family: 'Consolas', 'Monaco', monospace;
+    background-color: #000;
+    color: #00ff00; /* Texto verde brillante */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Asegura que ocupe toda la altura de la ventana */
+  }
+
+  #startButtonContainer {
+    text-align: center;
+    z-index: 100; /* Asegura que el botón esté por encima */
+  }
+
+  #startButton {
+    padding: 20px 40px;
+    font-size: 2em;
+    background-color: #00ff00;
+    color: #000;
+    border: 3px solid #00ff00;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.7);
+    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  #startButton:hover {
+    background-color: #00cc00;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.9);
+  }
+
+  #startButton:active {
+    background-color: #009900;
+  }
+
+  #fullscreenOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000; /* Fondo negro */
+    color: #00ff00; /* Texto verde */
+    font-family: 'Consolas', 'Monaco', monospace;
+    overflow: hidden; /* Esconde todo lo que se sale del área */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Empieza el contenido desde arriba */
+    align-items: flex-start; /* Alinea el texto a la izquierda */
+    padding: 20px;
+    box-sizing: border-box;
+    visibility: hidden; /* Inicialmente oculto */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 1000; /* Asegura que esté por encima de todo */
+  }
+
+  #fullscreenOverlay.active {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Área de la consola para mensajes */
+  #consoleArea {
+    width: 100%;
+    height: 80%; /* Ocupa la mayor parte de la altura */
+    overflow-y: scroll; /* Permite desplazamiento si hay muchos mensajes */
+    padding-right: 15px; /* Espacio para la barra de scroll */
+    box-sizing: border-box;
+    -ms-overflow-style: none; /* Oculta la barra de desplazamiento en IE/Edge */
+    scrollbar-width: none; /* Oculta la barra de desplazamiento en Firefox */
+  }
+  /* Oculta la barra de desplazamiento en Webkit (Chrome, Safari) */
+  #consoleArea::-webkit-scrollbar {
+    display: none;
+  }
+
+  .console-line {
+    white-space: pre-wrap; /* Mantiene saltos de línea */
+    margin-bottom: 3px;
+    line-height: 1.2;
+    animation: fadeInLine 0.5s forwards; /* Animación para cada nueva línea */
+  }
+
+  @keyframes fadeInLine {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .warning {
+    color: #ffcc00; /* Amarillo */
+    font-weight: bold;
+  }
+
+  .error {
+    color: #ff0000; /* Rojo */
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+  }
+
+  .success {
+    color: #00ff00; /* Verde */
+    font-weight: bold;
+  }
+
+  .antivirus {
+    color: #00ffff; /* Cian para simular antivirus */
+    font-weight: bold;
+  }
+
+  .data-stream {
+    font-size: 0.9em;
+    color: #009900; /* Verde más oscuro */
+    white-space: pre; /* Mantiene espacios y formato */
+  }
+
+  .prompt {
+    margin-top: 10px;
+    color: #00ff00;
+  }
+
+  .console-cursor {
+    display: inline-block;
+    width: 0.7em;
+    height: 1.2em;
+    background-color: #00ff00;
+    margin-left: 5px;
+    vertical-align: middle;
+    animation: blink-cursor 0.75s infinite alternate;
+  }
+
+  @keyframes blink-cursor {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  #exitTimer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-size: 1.5em;
+    color: #fff; /* Blanco para el temporizador */
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
+    border-radius: 8px;
+    z-index: 1001;
+  }
+</style>
+</head>
+<body>
+
+<div id="startButtonContainer">
+  <button id="startButton" onclick="activateHackermanMode()">¡Activar Modo Alerta!</button>
+</div>
+
+<div id="fullscreenOverlay">
+  <div id="consoleArea">
+    <div class="console-line"><span class="success">SYSTEM_INIT: Boot sequence complete.</span></div>
+    <div class="console-line"><span class="antivirus">[ANTIVIRUS]: Scanning system...</span></div>
+  </div>
+  <div class="prompt">
+    <span style="color: #00ff00;">C:\&gt;</span>
+    <span class="console-cursor"></span>
+  </div>
+  <div id="exitTimer">Saliendo en: <span id="countdown">30</span>s</div>
+</div>
+
+<script>
+const startButtonContainer = document.getElementById('startButtonContainer');
+const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+const consoleArea = document.getElementById('consoleArea');
+const countdownSpan = document.getElementById('countdown');
+
+const exitTimeSeconds = 30; // Tiempo en segundos antes de salir
+let timerInterval; // Variable para el intervalo del temporizador
+let messageInterval; // Variable para el intervalo de los mensajes de la consola
+
+const hackermanMessages = [
+  '<span class="antivirus">[AV_SCAN]: Critical threat detected: UNKNOWN_PROCESS_0x8F0C.</span>',
+  '<span class="error">ERROR: System integrity compromised!</span>',
+  '<span class="warning">WARNING: Data exfiltration detected from secure drive.</span>',
+  'C:\\&gt; netstat -an',
+  '  TCP    192.168.1.100:49152   172.217.160.1:443      ESTABLISHED',
+  '  TCP    192.168.1.100:49153   203.0.113.1:80         ESTABLISHED',
+  '<span class="antivirus">[AV_ACTION]: Quarantining suspicious files...</span>',
+  'C:\\&gt; dir /s C:\\Windows\\System32\\*.dll',
+  '<span class="data-stream">  08/14/2024  02:30 PM         1,234,567 kernel32.dll</span>',
+  '<span class="data-stream">  08/14/2024  02:31 PM           987,654 user32.dll</span>',
+  '<span class="error">ALERT: Unidentified network activity from [1.2.3.4].</span>',
+  '<span class="warning">ATTENTION: Firewall breached. Ports 80, 443, 21 are open.</span>',
+  '<span class="antivirus">[AV_UPDATE]: Signature definitions updated. Scanning again...</span>',
+  'C:\\&gt; ping google.com',
+  'Pinging google.com [142.250.186.206] with 32 bytes of data:',
+  'Reply from 142.250.186.206: bytes=32 time=15ms TTL=117',
+  '<span class="error">FAILURE: Unable to terminate rogue process. PID: 7789.</span>',
+  '<span class="warning">SYSTEM_OVERLOAD: CPU at 98%, Memory at 95%.</span>',
+  '<span class="antivirus">[AV_REPORT]: Malware detected: Trojan.Generic.42.</span>',
+  'C:\\&gt; tasklist /svc',
+  '<span class="data-stream">  Image Name             PID     Services</span>',
+  '<span class="data-stream">  ==================== ======== ============================================</span>',
+  '<span class="data-stream">  svchost.exe            1234    Dnscache, LanmanWorkstation</span>',
+  '<span class="data-stream">  malware.exe            7789    (None)</span>',
+  '<span class="success">STATUS: Backup initiated to cloud storage.</span>',
+  '<span class="error">CRITICAL: OS integrity check failed!</span>',
+  'C:\\&gt; ipconfig /all',
+  '<span class="data-stream">  IPv4 Address. . . . . . . . . . . : 192.168.1.100</span>',
+  '<span class="data-stream">  Subnet Mask . . . . . . . . . . . : 255.255.255.0</span>',
+  '<span class="data-stream">  Default Gateway . . . . . . . . . : 192.168.1.1</span>',
+  '<span class="antivirus">[AV_CLEAN]: Disinfecting affected files...</span>',
+  '<span class="success">SYSTEM_RESTORE: Reverting to last known good configuration...</span>',
+  '<span class="warning">FINAL WARNING: Remaining time critical before system collapse.</span>',
+  'C:\\&gt; SYSTEM_SHUTDOWN -f -t 60'
+];
+
+function addConsoleLine(message) {
+  const lineDiv = document.createElement('div');
+  lineDiv.classList.add('console-line');
+  lineDiv.innerHTML = message; // Usamos innerHTML para permitir las etiquetas span de colores
+  consoleArea.appendChild(lineDiv);
+  // Mantener el scroll al final
+  consoleArea.scrollTop = consoleArea.scrollHeight;
+}
+
+function startConsoleMessages() {
+  let messageIndex = 0;
+  messageInterval = setInterval(() => {
+    addConsoleLine(hackermanMessages[messageIndex]);
+    messageIndex = (messageIndex + 1) % hackermanMessages.length; // Ciclar mensajes
+  }, 100); // Añade un nuevo mensaje cada 100ms para un efecto rápido
+}
+
+function stopConsoleMessages() {
+  clearInterval(messageInterval);
+}
+
+function activateHackermanMode() {
+  startButtonContainer.style.display = 'none'; // Oculta el botón
+  fullscreenOverlay.classList.add('active'); // Muestra el overlay
+
+  // Solicita la pantalla completa
+  if (fullscreenOverlay.requestFullscreen) {
+    fullscreenOverlay.requestFullscreen();
+  } else if (fullscreenOverlay.mozRequestFullScreen) { /* Firefox */
+    fullscreenOverlay.mozRequestFullScreen();
+  } else if (fullscreenOverlay.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+    fullscreenOverlay.webkitRequestFullscreen();
+  } else if (fullscreenOverlay.msRequestFullscreen) { /* IE/Edge */
+    fullscreenOverlay.msRequestFullscreen();
+  }
+
+  // Inicia los mensajes dinámicos de la consola
+  startConsoleMessages();
+
+  let timeLeft = exitTimeSeconds;
+  countdownSpan.textContent = timeLeft;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    countdownSpan.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      stopConsoleMessages(); // Detiene los mensajes de la consola
+
+      // Sale de la pantalla completa
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) { /* Firefox */
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE/Edge */
+        document.msExitFullscreen();
+      }
+
+      // Oculta el overlay y muestra el botón de nuevo
+      fullscreenOverlay.classList.remove('active');
+      startButtonContainer.style.display = 'block'; // Muestra el botón de nuevo
+    }
+  }, 1000); // Actualiza cada segundo
+}
+
+// Escuchar el evento de salida de pantalla completa (por si el usuario lo hace manualmente)
+document.addEventListener('fullscreenchange', (event) => {
+    if (!document.fullscreenElement) { // Si ya no estamos en pantalla completa
+        clearInterval(timerInterval);
+        stopConsoleMessages();
+        fullscreenOverlay.classList.remove('active');
+        startButtonContainer.style.display = 'block';
+    }
+});
+document.addEventListener('webkitfullscreenchange', (event) => { // Para Chrome/Safari
+    if (!document.webkitFullscreenElement) {
+        clearInterval(timerInterval);
+        stopConsoleMessages();
+        fullscreenOverlay.classList.remove('active');
+        startButtonContainer.style.display = 'block';
+    }
+});
+document.addEventListener('mozfullscreenchange', (event) => { // Para Firefox
+    if (!document.mozFullScreenElement) {
+        clearInterval(timerInterval);
+        stopConsoleMessages();
+        fullscreenOverlay.classList.remove('active');
+        startButtonContainer.style.display = 'block';
+    }
+});
+document.addEventListener('MSFullscreenChange', (event) => { // Para IE/Edge
+    if (!document.msFullscreenElement) {
+        clearInterval(timerInterval);
+        stopConsoleMessages();
+        fullscreenOverlay.classList.remove('active');
+        startButtonContainer.style.display = 'block';
+    }
+});
+
+</script>
+
+</body>
+</html>

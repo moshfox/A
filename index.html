@@ -95,29 +95,18 @@
   /* Ratón Falso */
   #fakeMouse {
     position: fixed; /* O absolute dentro de un contenedor si su contenedor es el que se mueve */
-    width: 22px; /* Ancho típico de un cursor de flecha */
-    height: 22px; /* Alto típico */
-    background-color: transparent;
+    width: 32px; /* Ancho típico de un cursor de flecha */
+    height: 32px; /* Alto típico */
+    background-image: url('https://i.pinimg.com/originals/89/3e/26/893e26ca02a2ff76d54b428d84920b64.png'); /* URL de la imagen del cursor */
+    background-size: contain; /* Ajusta la imagen al tamaño del div */
+    background-repeat: no-repeat; /* Evita que la imagen se repita */
+    background-position: center; /* Centra la imagen dentro del div */
     border: none;
     pointer-events: none; /* Importante: no bloquea clics debajo */
     z-index: 1005; /* Asegúrate de que esté por encima de casi todo */
     visibility: hidden; /* Oculto por defecto */
     transform: translate(-50%, -50%); /* Centra el div en las coordenadas del ratón */
-    filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7)); /* Sombra para efecto neón */
-  }
-
-  #fakeMouse::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 22px 0 0 10px; /* Tamaño de la flecha */
-    border-color: #00ff00 transparent transparent transparent; /* Verde neón */
-    transform: rotate(45deg); /* Rotación para que apunte correctamente */
-    transform-origin: top left;
+    /* filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7)); */ /* Sombra para efecto neón - opcional con la imagen */
   }
 
   #fakeMouse.active {

@@ -13,7 +13,7 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    cursor: default; /* El cursor es visible en la pantalla inicial */
+    cursor: default; /* El cursor es visible en la pantalla inicial del botón */
   }
 
   #startButtonContainer {
@@ -84,13 +84,46 @@
     opacity: 0;
     transition: opacity 0.5s ease;
     z-index: 1000;
-    cursor: none; /* Cursor oculto una vez en la simulación */
+    cursor: none; /* Cursor real oculto una vez en la simulación */
   }
 
   #fullscreenOverlay.active {
     visibility: visible;
     opacity: 1;
   }
+
+  /* Ratón Falso */
+  #fakeMouse {
+    position: fixed; /* O absolute dentro de un contenedor si su contenedor es el que se mueve */
+    width: 22px; /* Ancho típico de un cursor de flecha */
+    height: 22px; /* Alto típico */
+    background-color: transparent;
+    border: none;
+    pointer-events: none; /* Importante: no bloquea clics debajo */
+    z-index: 1005; /* Asegúrate de que esté por encima de casi todo */
+    visibility: hidden; /* Oculto por defecto */
+    transform: translate(-50%, -50%); /* Centra el div en las coordenadas del ratón */
+    filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7)); /* Sombra para efecto neón */
+  }
+
+  #fakeMouse::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 22px 0 0 10px; /* Tamaño de la flecha */
+    border-color: #00ff00 transparent transparent transparent; /* Verde neón */
+    transform: rotate(45deg); /* Rotación para que apunte correctamente */
+    transform-origin: top left;
+  }
+
+  #fakeMouse.active {
+      visibility: visible;
+  }
+
 
   /* Mensaje de BLOQUEO al intentar salir */
   #lockedMessage {
@@ -345,6 +378,8 @@
       <span class="message">PC SELF-DESTRUCT INITIATED</span>
   </div>
 
+  <div id="fakeMouse"></div>
+
 </div>
 
 <script>
@@ -358,16 +393,19 @@ const antivirusProgress = document.getElementById('antivirusProgress');
 const dataRain = document.getElementById('dataRain');
 const selfDestructCountdown = document.getElementById('selfDestructCountdown');
 const countdownNumber = document.getElementById('countdownNumber');
+const fakeMouse = document.getElementById('fakeMouse'); // Nuevo elemento del ratón falso
 
 const antivirusAppearTime = 2000; // La ventana de antivirus aparece después de 2 segundos de iniciar la simulación
 const selfDestructTriggerTime = 20000; // La autodestrucción empieza después de 20 segundos de iniciar la simulación
 
 const messageIntervalSpeed = 40; // Mensajes de consola cada 40ms (más rápido)
+const fakeMouseMovementSpeed = 50; // Velocidad de actualización del movimiento del ratón falso (en ms)
 
 let messageInterval;
 let antivirusInterval;
 let dataRainInterval;
 let selfDestructTimer;
+let fakeMouseMovementInterval; // Intervalo para el movimiento del ratón falso
 
 // Mensajes para la consola principal (más variados y caóticos)
 const hackermanMessages = [
@@ -509,6 +547,42 @@ function stopDataRain() {
     dataRain.innerHTML = '';
 }
 
+// Lógica para el movimiento del ratón falso
+let fakeMouseX = window.innerWidth / 2;
+let fakeMouseY = window.innerHeight / 2;
+let fakeMouseTargetX = fakeMouseX;
+let fakeMouseTargetY = fakeMouseY;
+
+function updateFakeMousePosition() {
+    // Mueve el ratón falso hacia un objetivo
+    const dx = fakeMouseTargetX - fakeMouseX;
+    const dy = fakeMouseTargetY - fakeMouseY;
+    
+    // Suaviza el movimiento
+    fakeMouseX += dx * 0.1; 
+    fakeMouseY += dy * 0.1;
+
+    // Si está cerca del objetivo, elige un nuevo objetivo
+    if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+        fakeMouseTargetX = Math.random() * window.innerWidth;
+        fakeMouseTargetY = Math.random() * window.innerHeight;
+    }
+
+    fakeMouse.style.left = `${fakeMouseX}px`;
+    fakeMouse.style.top = `${fakeMouseY}px`;
+}
+
+function startFakeMouseMovement() {
+    fakeMouse.classList.add('active'); // Muestra el ratón falso
+    fakeMouseMovementInterval = setInterval(updateFakeMousePosition, fakeMouseMovementSpeed);
+}
+
+function stopFakeMouseMovement() {
+    clearInterval(fakeMouseMovementInterval);
+    fakeMouse.classList.remove('active'); // Oculta el ratón falso
+}
+
+
 // Lógica de Autodestrucción
 function startSelfDestructCountdown() {
     selfDestructCountdown.classList.add('active');
@@ -564,6 +638,7 @@ function activateHackermanMode() {
 
   startConsoleMessages();
   startDataRain();
+  startFakeMouseMovement(); // Inicia el movimiento del ratón falso
 
   // Aparición de la ventana de antivirus
   setTimeout(activateAntivirusWindow, antivirusAppearTime);
@@ -580,6 +655,7 @@ function resetHackermanMode() {
     stopConsoleMessages();
     stopAntivirusWindow();
     stopDataRain();
+    stopFakeMouseMovement(); // Detiene el movimiento del ratón falso
     clearInterval(selfDestructTimer);
 
     // Reiniciar el estado visual de la consola para la próxima vez que se active (si la página se recarga)
@@ -630,12 +706,10 @@ function handleFullscreenExit() {
             if (reEnterFullscreenTimeoutId === null) {
                 // Configura un intento de re-entrada muy rápido
                 reEnterFullscreenTimeoutId = setTimeout(() => {
-                    // console.log("Intentando re-entrar a pantalla completa..."); // Para depuración
                     if (document.documentElement.requestFullscreen) {
                         document.documentElement.requestFullscreen()
                             .catch(err => {
                                 // console.log("Error al intentar re-entrar a pantalla completa:", err.name, err.message);
-                                // Este catch es crucial: si el navegador lo bloquea, libera el timeoutId
                                 reEnterFullscreenTimeoutId = null; 
                             });
                     } else if (document.documentElement.mozRequestFullScreen) {
@@ -645,10 +719,9 @@ function handleFullscreenExit() {
                     } else if (document.documentElement.msRequestFullscreen) {
                         document.documentElement.msRequestFullscreen();
                     }
-                    // Liberar el timeoutId después de la solicitud para permitir futuros intentos
-                    // si la solicitud actual falla o es bloqueada.
+                    // Si se logró entrar (o el navegador lo bloqueó), reseteamos el ID
+                    // para permitir futuros intentos.
                     if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-                        // Si se logró entrar, reseteamos el ID
                         reEnterFullscreenTimeoutId = null;
                     }
                 }, 50); // Intenta re-entrar después de 50ms (muy rápido)
